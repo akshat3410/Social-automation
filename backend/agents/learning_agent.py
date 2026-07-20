@@ -1,50 +1,60 @@
-from pydantic import BaseModel
-from .base import BaseAgent, AgentContext, AgentResult
+import time
 
-class LearningResult(BaseModel):
-    insights: list[str]
-    memory_updates_count: int
+from pydantic import BaseModel, Field, ValidationError
+
+from .base import AgentContext, AgentParseError, AgentResult, BaseAgent, parse_json_response
+
+
+class LearningOutput(BaseModel):
+    insights: list[str] = Field(default_factory=list)
+
 
 class LearningAgent(BaseAgent):
-    name = "LearningAgent"
-    description = "Learns from analytics and updates memory."
+    name = "learning"
+    description = "Learns from analytics and updates brand memory."
 
-    def __init__(self, llm_provider, settings, memory_service):
-        super().__init__(llm_provider, settings)
+    def __init__(self, llm_provider, settings, prompt_template, memory_service, model=None):
+        super().__init__(llm_provider, settings, prompt_template, model)
         self.memory_service = memory_service
 
-    async def run(self, context: AgentContext, post_content: str, analytics: dict) -> AgentResult:
-        with open("/Users/akshatsoni/teamwork_projects/social_engine/backend/prompts/learning.md", "r") as f:
-            template = f.read()
+    async def run(self, context: AgentContext, **kwargs) -> AgentResult:
+        post_content: str = kwargs["post_content"]
+        analytics: dict = kwargs["analytics"]
+        previous_performance: str = kwargs.get("previous_performance", "N/A")
+        start = time.monotonic()
 
-        prompt = await self._build_prompt(
-            template,
+        prompt = self._build_prompt(
             post_content=post_content,
             analytics_data=str(analytics),
-            previous_performance="N/A"
+            previous_performance=previous_performance,
         )
-        
-        response = await self._call_llm(prompt)
-        
-        # Parse insights
-        insights = ["Insight 1"]
-        
-        # Update memory via service
-        await self.memory_service.store(
-            content=f"Post insights: {insights}",
-            type="insight",
-            user_id=context.user_id,
-            metadata={"platform": context.platform}
-        )
-        
-        result = LearningResult(
-            insights=insights,
-            memory_updates_count=1
-        )
-        
+        response = await self._call_llm(prompt, model=self.model)
+
+        try:
+            output = LearningOutput.model_validate(parse_json_response(response.content))
+        except (AgentParseError, ValidationError) as exc:
+            return AgentResult(
+                success=False,
+                data={},
+                error=f"Learning output parsing failed: {exc}",
+                tokens_used=response.tokens_used,
+                duration_ms=self._elapsed_ms(start),
+            )
+
+        stored = 0
+        for insight in output.insights:
+            saved = await self.memory_service.store(
+                content=insight,
+                type="style",
+                user_id=context.user_id,
+                metadata={"platform": context.platform, "source": "learning_agent"},
+            )
+            if saved is not None:
+                stored += 1
+
         return AgentResult(
             success=True,
-            data=result.model_dump(),
+            data={"insights": output.insights, "memory_updates_count": stored},
             tokens_used=response.tokens_used,
-            duration_ms=100
+            duration_ms=self._elapsed_ms(start),
         )

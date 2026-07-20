@@ -21,3 +21,6 @@ class ProviderError(SocialEngineError):
 
 class RateLimitError(SocialEngineError):
     pass
+
+class ValidationError(SocialEngineError):
+    pass

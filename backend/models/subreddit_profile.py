@@ -1,9 +1,12 @@
 from datetime import datetime
 from typing import Any
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import String, Integer, Float, Boolean, DateTime
+
+from sqlalchemy import Boolean, DateTime, Float, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB
-from backend.database.base import Base, UUIDMixin, TimestampMixin
+from sqlalchemy.orm import Mapped, mapped_column
+
+from database.base import Base, TimestampMixin, UUIDMixin
+
 
 class SubredditProfile(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "subreddit_profiles"

@@ -1,11 +1,14 @@
 import uuid
 from datetime import datetime
 from typing import Any
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import Integer, Float, ForeignKey, DateTime, Enum, Index
+
+from sqlalchemy import DateTime, Enum, Float, ForeignKey, Integer
 from sqlalchemy.dialects.postgresql import JSONB
-from backend.database.base import Base, UUIDMixin, TimestampMixin
-from backend.models.social_account import PlatformEnum
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from database.base import Base, TimestampMixin, UUIDMixin
+from models.social_account import PlatformEnum
+
 
 class Analytics(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "analytics"

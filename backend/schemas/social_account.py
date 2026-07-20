@@ -1,6 +1,9 @@
-from pydantic import BaseModel, ConfigDict
-from .common import UUIDStr
 from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict
+
+from .common import UUIDStr
+
 
 class SocialAccountCreate(BaseModel):
     platform: str

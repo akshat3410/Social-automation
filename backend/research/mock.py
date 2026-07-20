@@ -1,4 +1,5 @@
-from .base import ResearchPlugin, RawResearchItem
+from .base import RawResearchItem, ResearchPlugin
+
 
 class MockResearchPlugin(ResearchPlugin):
     name = "mock"

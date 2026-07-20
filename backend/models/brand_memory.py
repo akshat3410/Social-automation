@@ -1,13 +1,15 @@
-import uuid
-from typing import Any, List
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String, Float, ForeignKey, Enum, Index
-from sqlalchemy.dialects.postgresql import JSONB
-from pgvector.sqlalchemy import Vector
-from backend.database.base import Base, UUIDMixin, TimestampMixin
-from backend.models.social_account import PlatformEnum
-
 import enum
+import uuid
+from typing import Any
+
+from pgvector.sqlalchemy import Vector
+from sqlalchemy import Enum, Float, ForeignKey, String
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import Mapped, mapped_column
+
+from database.base import Base, TimestampMixin, UUIDMixin
+from models.social_account import PlatformEnum
+
 
 class MemoryTypeEnum(str, enum.Enum):
     tweet = "tweet"
@@ -25,5 +27,5 @@ class BrandMemory(Base, UUIDMixin, TimestampMixin):
     content: Mapped[str] = mapped_column(String, nullable=False)
     embedding: Mapped[Any | None] = mapped_column(Vector(1536), nullable=True)
     performance_score: Mapped[float | None] = mapped_column(Float, nullable=True)
-    tags: Mapped[List[str] | None] = mapped_column(JSONB, nullable=True)
+    tags: Mapped[list[str] | None] = mapped_column(JSONB, nullable=True)
     platform: Mapped[PlatformEnum | None] = mapped_column(Enum(PlatformEnum), nullable=True)

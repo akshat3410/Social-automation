@@ -1,9 +1,12 @@
 import uuid
 from typing import Any
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import Float, Boolean, String, ForeignKey
+
+from sqlalchemy import Boolean, Float, ForeignKey, String
 from sqlalchemy.dialects.postgresql import JSONB
-from backend.database.base import Base, UUIDMixin, TimestampMixin
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from database.base import Base, TimestampMixin, UUIDMixin
+
 
 class QualityScore(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "quality_scores"

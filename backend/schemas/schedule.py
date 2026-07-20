@@ -1,25 +1,34 @@
-from pydantic import BaseModel, ConfigDict
-from .common import UUIDStr
 from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict
+
+from .common import UUIDStr
+
+
+class PublishNowRequest(BaseModel):
+    draft_id: UUIDStr
+
 
 class ScheduleCreate(BaseModel):
     draft_id: UUIDStr
-    social_account_id: UUIDStr
-    scheduled_at: datetime
+    scheduled_for: datetime
 
-class ScheduleUpdate(BaseModel):
-    scheduled_at: datetime | None = None
-    status: str | None = None
 
 class ScheduleResponse(BaseModel):
     id: UUIDStr
-    user_id: UUIDStr
-    draft_id: UUIDStr
-    social_account_id: UUIDStr
-    scheduled_at: datetime
+    draft_id: UUIDStr | None
+    scheduled_for: datetime | None
     status: str
-    job_id: str | None
-    created_at: datetime
-    updated_at: datetime
-    
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PublishedPostResponse(BaseModel):
+    id: UUIDStr
+    draft_id: UUIDStr
+    platform: str
+    platform_post_id: str | None
+    url: str | None = None
+    published_at: datetime | None
+
     model_config = ConfigDict(from_attributes=True)

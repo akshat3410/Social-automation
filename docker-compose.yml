@@ -1,22 +1,21 @@
-version: '3.8'
-
 services:
   postgres:
-    image: ankane/pgvector:v0.5.1
+    image: pgvector/pgvector:pg16
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-social_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-social_password}
       POSTGRES_DB: ${POSTGRES_DB:-social_engine}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./docker/init-pgvector.sql:/docker-entrypoint-initdb.d/init-pgvector.sql
+      - ./docker/init-pgvector.sql:/docker-entrypoint-initdb.d/init-pgvector.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-social_user} -d ${POSTGRES_DB:-social_engine}"]
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
     networks:
       - social-engine-network
 
@@ -25,14 +24,29 @@ services:
     command: redis-server /usr/local/etc/redis/redis.conf
     volumes:
       - redis_data:/data
-      - ./docker/redis.conf:/usr/local/etc/redis/redis.conf
-    ports:
-      - "6379:6379"
+      - ./docker/redis.conf:/usr/local/etc/redis/redis.conf:ro
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
+    networks:
+      - social-engine-network
+
+  migrate:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: alembic upgrade head
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-social_user}:${POSTGRES_PASSWORD:-social_password}@postgres:5432/${POSTGRES_DB:-social_engine}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
     networks:
       - social-engine-network
 
@@ -40,18 +54,19 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8000}:8000"
     env_file:
       - .env
-    volumes:
-      - ./backend:/app
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-social_user}:${POSTGRES_PASSWORD:-social_password}@postgres:5432/${POSTGRES_DB:-social_engine}
+      REDIS_URL: redis://redis:6379/0
     depends_on:
-      postgres:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
+    restart: unless-stopped
     networks:
       - social-engine-network
 
@@ -59,14 +74,15 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    command: python -m dramatiq tasks.content_tasks
+    command: python -m dramatiq tasks.content_tasks --processes 1 --threads 4
     env_file:
       - .env
-    volumes:
-      - ./backend:/app
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-social_user}:${POSTGRES_PASSWORD:-social_password}@postgres:5432/${POSTGRES_DB:-social_engine}
+      REDIS_URL: redis://redis:6379/0
     depends_on:
-      postgres:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
     restart: unless-stopped
@@ -77,14 +93,15 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    command: python workers/scheduler.py
+    command: python -m workers.scheduler
     env_file:
       - .env
-    volumes:
-      - ./backend:/app
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-social_user}:${POSTGRES_PASSWORD:-social_password}@postgres:5432/${POSTGRES_DB:-social_engine}
+      REDIS_URL: redis://redis:6379/0
     depends_on:
-      postgres:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
     restart: unless-stopped
@@ -95,14 +112,13 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000/api/v1}
     ports:
-      - "3000:3000"
-    env_file:
-      - .env.frontend
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-      - /app/.next
+      - "${FRONTEND_PORT:-3000}:3000"
+    depends_on:
+      - backend
+    restart: unless-stopped
     networks:
       - social-engine-network
 

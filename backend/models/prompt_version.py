@@ -1,16 +1,19 @@
-import uuid
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import String, Integer, Float, Boolean, ForeignKey, Enum
-from backend.database.base import Base, UUIDMixin, TimestampMixin
-
 import enum
+import uuid
+
+from sqlalchemy import Boolean, Enum, Float, ForeignKey, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column
+
+from database.base import Base, TimestampMixin, UUIDMixin
+
 
 class AgentNameEnum(str, enum.Enum):
-    researcher = "researcher"
+    research = "research"
+    planning = "planning"
     writer = "writer"
     editor = "editor"
-    reviewer = "reviewer"
-    analyzer = "analyzer"
+    quality = "quality"
+    learning = "learning"
 
 class PromptVersion(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "prompt_versions"

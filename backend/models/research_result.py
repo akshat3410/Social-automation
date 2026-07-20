@@ -1,12 +1,14 @@
+import enum
 import uuid
 from typing import Any
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String, Float, ForeignKey, Enum, Index
-from sqlalchemy.dialects.postgresql import JSONB
-from pgvector.sqlalchemy import Vector
-from backend.database.base import Base, UUIDMixin, TimestampMixin
 
-import enum
+from pgvector.sqlalchemy import Vector
+from sqlalchemy import Enum, Float, ForeignKey, String
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from database.base import Base, TimestampMixin, UUIDMixin
+
 
 class SourceEnum(str, enum.Enum):
     github = "github"

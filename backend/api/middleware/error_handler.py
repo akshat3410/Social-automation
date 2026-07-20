@@ -1,14 +1,14 @@
+import logging
+
 from fastapi import Request
 from fastapi.responses import JSONResponse
-import logging
+
 from services.exceptions import (
-    SocialEngineError,
-    NotFoundError,
-    UnauthorizedError,
     DuplicateContentError,
-    QualityGateFailedError,
-    ProviderError,
+    NotFoundError,
     RateLimitError,
+    SocialEngineError,
+    UnauthorizedError,
 )
 
 logger = logging.getLogger(__name__)

@@ -1,12 +1,14 @@
+import enum
 import uuid
 from typing import Any
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String, Integer, ForeignKey, Enum, Index
-from sqlalchemy.dialects.postgresql import JSONB
-from backend.database.base import Base, UUIDMixin, TimestampMixin, SoftDeleteMixin
-from backend.models.social_account import PlatformEnum
 
-import enum
+from sqlalchemy import Enum, ForeignKey, Integer, String
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from database.base import Base, SoftDeleteMixin, TimestampMixin, UUIDMixin
+from models.social_account import PlatformEnum
+
 
 class ToneEnum(str, enum.Enum):
     professional = "professional"

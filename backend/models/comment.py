@@ -1,12 +1,14 @@
+import enum
 import uuid
 from datetime import datetime
 from typing import Any
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String, Boolean, ForeignKey, DateTime, Enum, Index
-from sqlalchemy.dialects.postgresql import JSONB
-from backend.database.base import Base, UUIDMixin, TimestampMixin
 
-import enum
+from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, String
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from database.base import Base, TimestampMixin, UUIDMixin
+
 
 class SentimentEnum(str, enum.Enum):
     positive = "positive"

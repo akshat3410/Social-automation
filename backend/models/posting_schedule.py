@@ -1,10 +1,12 @@
+import enum
 import uuid
 from datetime import datetime
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String, Integer, ForeignKey, Enum, DateTime, Index
-from backend.database.base import Base, UUIDMixin, TimestampMixin
 
-import enum
+from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from database.base import Base, TimestampMixin, UUIDMixin
+
 
 class ScheduleTypeEnum(str, enum.Enum):
     immediate = "immediate"
@@ -22,7 +24,7 @@ class PostingSchedule(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "posting_schedules"
 
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    social_account_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("social_accounts.id", ondelete="CASCADE"), nullable=False, index=True)
+    social_account_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("social_accounts.id", ondelete="CASCADE"), nullable=True, index=True)
     draft_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("drafts.id", ondelete="SET NULL"), nullable=True, index=True)
     schedule_type: Mapped[ScheduleTypeEnum] = mapped_column(Enum(ScheduleTypeEnum), nullable=False)
     cron_expression: Mapped[str | None] = mapped_column(String, nullable=True)

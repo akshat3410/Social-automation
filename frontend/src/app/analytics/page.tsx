@@ -1,126 +1,210 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LineChart, Line, BarChart, Bar, PieChart, Pie, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
-
-const timelineData = [
-  { date: 'Mon', posts: 2, engagement: 400 },
-  { date: 'Tue', posts: 3, engagement: 600 },
-  { date: 'Wed', posts: 1, engagement: 300 },
-  { date: 'Thu', posts: 4, engagement: 800 },
-  { date: 'Fri', posts: 2, engagement: 500 },
-  { date: 'Sat', posts: 5, engagement: 1200 },
-  { date: 'Sun', posts: 3, engagement: 700 },
-];
-
-const platformData = [
-  { name: 'Twitter', value: 45 },
-  { name: 'LinkedIn', value: 35 },
-  { name: 'Facebook', value: 15 },
-  { name: 'Instagram', value: 5 },
-];
-
-const topPostsData = [
-  { name: 'Post A', views: 4000 },
-  { name: 'Post B', views: 3000 },
-  { name: 'Post C', views: 2000 },
-  { name: 'Post D', views: 1500 },
-];
-
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+import { getAnalyticsPosts, getAnalyticsSummary } from "@/lib/api";
 
 export default function AnalyticsPage() {
+  const summaryQuery = useQuery({
+    queryKey: ["analytics", "summary"],
+    queryFn: getAnalyticsSummary,
+  });
+  const postsQuery = useQuery({
+    queryKey: ["analytics", "posts"],
+    queryFn: getAnalyticsPosts,
+  });
+
+  const summary = summaryQuery.data;
+  const posts = postsQuery.data ?? [];
+
+  const chartData = [...posts]
+    .sort(
+      (a, b) =>
+        new Date(a.published_at).getTime() - new Date(b.published_at).getTime()
+    )
+    .map((p) => ({
+      name:
+        p.content_preview.length > 24
+          ? `${p.content_preview.slice(0, 24)}…`
+          : p.content_preview,
+      views: p.views,
+      likes: p.likes,
+      replies: p.replies,
+      reposts: p.reposts,
+      engagement: Number((p.engagement_rate * 100).toFixed(2)),
+      date: new Date(p.published_at).toLocaleDateString(),
+    }));
+
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Analytics</h1>
-        <select className="bg-background border rounded-md p-2 text-sm">
-          <option>Last 7 Days</option>
-          <option>Last 30 Days</option>
-          <option>This Year</option>
-        </select>
-      </div>
+      <h1 className="text-3xl font-bold">Analytics</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Total Views</CardTitle></CardHeader>
-          <CardContent><div className="text-2xl font-bold">124.5K</div></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Total Likes</CardTitle></CardHeader>
-          <CardContent><div className="text-2xl font-bold">8.2K</div></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Total Replies</CardTitle></CardHeader>
-          <CardContent><div className="text-2xl font-bold">1.4K</div></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Total Reach</CardTitle></CardHeader>
-          <CardContent><div className="text-2xl font-bold">342.1K</div></CardContent>
-        </Card>
-      </div>
+      {summaryQuery.isLoading ? (
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" /> Loading summary...
+        </div>
+      ) : summaryQuery.isError ? (
+        <p className="text-sm text-destructive">Failed to load summary.</p>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          {[
+            { label: "Posts", value: summary?.total_posts ?? 0 },
+            {
+              label: "Views",
+              value: (summary?.total_views ?? 0).toLocaleString(),
+            },
+            {
+              label: "Likes",
+              value: (summary?.total_likes ?? 0).toLocaleString(),
+            },
+            {
+              label: "Replies",
+              value: (summary?.total_replies ?? 0).toLocaleString(),
+            },
+            {
+              label: "Reposts",
+              value: (summary?.total_reposts ?? 0).toLocaleString(),
+            },
+            {
+              label: "Avg Engagement",
+              value: `${((summary?.avg_engagement_rate ?? 0) * 100).toFixed(1)}%`,
+            },
+          ].map((stat) => (
+            <Card key={stat.label}>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">
+                  {stat.label}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stat.value}</div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {postsQuery.isLoading ? (
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" /> Loading post analytics...
+        </div>
+      ) : postsQuery.isError ? (
+        <p className="text-sm text-destructive">
+          Failed to load post analytics.
+        </p>
+      ) : posts.length === 0 ? (
         <Card>
-          <CardHeader>
-            <CardTitle>Engagement Over Time</CardTitle>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={timelineData}>
-                <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="engagement" stroke="#8884d8" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
+          <CardContent className="p-6 text-sm text-muted-foreground">
+            No published posts yet — analytics will appear once posts go live.
           </CardContent>
         </Card>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Engagement Rate Over Time</CardTitle>
+            </CardHeader>
+            <CardContent className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                  <XAxis dataKey="date" />
+                  <YAxis unit="%" />
+                  <Tooltip />
+                  <Legend />
+                  <Line
+                    type="monotone"
+                    dataKey="engagement"
+                    name="Engagement %"
+                    stroke="#8884d8"
+                    strokeWidth={2}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Platform Distribution</CardTitle>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={platformData}
-                  innerRadius={60}
-                  outerRadius={100}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {platformData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+          <Card>
+            <CardHeader>
+              <CardTitle>Views per Post</CardTitle>
+            </CardHeader>
+            <CardContent className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                  <XAxis dataKey="name" hide />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="views" fill="#82ca9d" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>Posts</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0 overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left text-muted-foreground">
+                    <th className="p-4 font-medium">Content</th>
+                    <th className="p-4 font-medium">Platform</th>
+                    <th className="p-4 font-medium text-right">Views</th>
+                    <th className="p-4 font-medium text-right">Likes</th>
+                    <th className="p-4 font-medium text-right">Replies</th>
+                    <th className="p-4 font-medium text-right">Reposts</th>
+                    <th className="p-4 font-medium text-right">Engagement</th>
+                    <th className="p-4 font-medium">Published</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {posts.map((post) => (
+                    <tr key={post.post_id} className="border-b last:border-b-0">
+                      <td className="p-4 max-w-xs truncate">
+                        {post.content_preview}
+                      </td>
+                      <td className="p-4 capitalize">{post.platform}</td>
+                      <td className="p-4 text-right">
+                        {post.views.toLocaleString()}
+                      </td>
+                      <td className="p-4 text-right">
+                        {post.likes.toLocaleString()}
+                      </td>
+                      <td className="p-4 text-right">
+                        {post.replies.toLocaleString()}
+                      </td>
+                      <td className="p-4 text-right">
+                        {post.reposts.toLocaleString()}
+                      </td>
+                      <td className="p-4 text-right">
+                        {(post.engagement_rate * 100).toFixed(1)}%
+                      </td>
+                      <td className="p-4 whitespace-nowrap">
+                        {new Date(post.published_at).toLocaleDateString()}
+                      </td>
+                    </tr>
                   ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Top Performing Posts</CardTitle>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={topPostsData}>
-                <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="views" fill="#82ca9d" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
+                </tbody>
+              </table>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

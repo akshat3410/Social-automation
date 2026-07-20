@@ -1,21 +1,39 @@
-from typing import Generic, TypeVar, Any
+from typing import Any, Generic, TypeVar
 from uuid import UUID
+
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, delete
+
+from database.base import utc_now
 
 T = TypeVar("T")
+
 
 class BaseRepository(Generic[T]):
     def __init__(self, model: type[T], session: AsyncSession):
         self.model = model
         self.session = session
 
+    def _base_query(self):
+        query = select(self.model)
+        if hasattr(self.model, "deleted_at"):
+            query = query.where(self.model.deleted_at.is_(None))  # type: ignore[attr-defined]
+        return query
+
     async def get(self, id: UUID) -> T | None:
-        result = await self.session.execute(select(self.model).where(self.model.id == id))
+        result = await self.session.execute(
+            self._base_query().where(self.model.id == id)  # type: ignore[attr-defined]
+        )
         return result.scalar_one_or_none()
 
-    async def get_multi(self, *, skip: int = 0, limit: int = 100, filters: dict[str, Any] | None = None) -> list[T]:
-        query = select(self.model)
+    async def get_multi(
+        self,
+        *,
+        skip: int = 0,
+        limit: int = 100,
+        filters: dict[str, Any] | None = None,
+    ) -> list[T]:
+        query = self._base_query()
         if filters:
             for k, v in filters.items():
                 query = query.where(getattr(self.model, k) == v)
@@ -44,13 +62,15 @@ class BaseRepository(Generic[T]):
         db_obj = await self.get(id)
         if not db_obj:
             return False
-        if hasattr(db_obj, "is_deleted"):
-            db_obj.is_deleted = True
+        if hasattr(db_obj, "deleted_at"):
+            db_obj.deleted_at = utc_now()  # type: ignore[attr-defined]
             await self.session.commit()
             return True
         return False
 
     async def hard_delete(self, id: UUID) -> bool:
-        result = await self.session.execute(delete(self.model).where(self.model.id == id))
+        result = await self.session.execute(
+            delete(self.model).where(self.model.id == id)  # type: ignore[attr-defined]
+        )
         await self.session.commit()
-        return result.rowcount > 0
+        return result.rowcount > 0  # type: ignore[attr-defined]
