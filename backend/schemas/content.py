@@ -1,55 +1,73 @@
-from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime
+from typing import Any
+
+from pydantic import BaseModel, ConfigDict, Field
+
 from .common import UUIDStr
 
+
 class ContentIdeaCreate(BaseModel):
-    topic: str
+    title: str = Field(min_length=1, max_length=255)
+    description: str | None = None
     platform: str
-    notes: str | None = None
+
 
 class ContentIdeaUpdate(BaseModel):
-    topic: str | None = None
+    title: str | None = None
+    description: str | None = None
     platform: str | None = None
     status: str | None = None
-    notes: str | None = None
+
 
 class ContentIdeaResponse(BaseModel):
     id: UUIDStr
-    user_id: UUIDStr
-    topic: str
+    title: str
+    description: str | None
     platform: str
     status: str
-    notes: str | None
     created_at: datetime
-    updated_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
+
 
 class DraftResponse(BaseModel):
     id: UUIDStr
     idea_id: UUIDStr
     content: str
+    platform: str
     status: str
-    quality_score: float | None = None
+    hook: str | None = None
+    quality_score: dict[str, Any] | None = None
+    scheduled_for: datetime | None = None
     created_at: datetime
-    updated_at: datetime
-    
-    model_config = ConfigDict(from_attributes=True)
+
+    @classmethod
+    def from_model(cls, draft: Any, scheduled_for: datetime | None = None) -> "DraftResponse":
+        return cls(
+            id=draft.id,
+            idea_id=draft.idea_id,
+            content=draft.content,
+            platform=draft.platform.value if hasattr(draft.platform, "value") else draft.platform,
+            status=draft.status.value if hasattr(draft.status, "value") else draft.status,
+            hook=draft.hook,
+            quality_score=draft.quality_score_data,
+            scheduled_for=scheduled_for,
+            created_at=draft.created_at,
+        )
+
 
 class DraftApprovalRequest(BaseModel):
-    reason: str | None = None
+    scheduled_for: datetime | None = None
 
-class ResearchRequest(BaseModel):
-    topic: str
-    platform: str
 
-class ResearchResponse(BaseModel):
-    idea_id: UUIDStr
-    summary: str
-    sources: list[str] = Field(default_factory=list)
+class DraftRejectionRequest(BaseModel):
+    reason: str = Field(min_length=1)
+
 
 class GenerateContentRequest(BaseModel):
-    idea_id: UUIDStr
+    num_variations: int | None = Field(default=None, ge=1, le=5)
 
-class GenerateContentResponse(BaseModel):
-    drafts: list[DraftResponse]
+
+class TaskQueuedResponse(BaseModel):
+    task_id: str
+    status: str = "queued"

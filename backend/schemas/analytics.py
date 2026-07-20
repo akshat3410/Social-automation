@@ -1,27 +1,26 @@
-from pydantic import BaseModel, ConfigDict
-from .common import UUIDStr
 from datetime import datetime
 
-class AnalyticsResponse(BaseModel):
-    id: UUIDStr
-    post_id: UUIDStr
-    likes: int
-    shares: int
-    comments: int
-    impressions: int
-    clicks: int
-    synced_at: datetime
-    
-    model_config = ConfigDict(from_attributes=True)
+from pydantic import BaseModel
+
+from .common import UUIDStr
+
 
 class AnalyticsSummary(BaseModel):
-    total_likes: int
-    total_shares: int
-    total_comments: int
-    total_impressions: int
     total_posts: int
+    total_views: int
+    total_likes: int
+    total_replies: int
+    total_reposts: int
+    avg_engagement_rate: float
 
-class PerformanceComparison(BaseModel):
-    current_period: AnalyticsSummary
-    previous_period: AnalyticsSummary
-    improvement_percentage: float
+
+class PostAnalyticsItem(BaseModel):
+    post_id: UUIDStr
+    content_preview: str
+    platform: str
+    views: int
+    likes: int
+    replies: int
+    reposts: int
+    engagement_rate: float
+    published_at: datetime | None

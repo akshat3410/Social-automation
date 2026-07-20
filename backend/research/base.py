@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
-from pydantic import BaseModel
 from datetime import datetime
+
+from pydantic import BaseModel
+
 
 class RawResearchItem(BaseModel):
     title: str

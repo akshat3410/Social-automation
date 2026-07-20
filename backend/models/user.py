@@ -1,7 +1,8 @@
-import uuid
+from sqlalchemy import Boolean, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String, Boolean
-from backend.database.base import Base, UUIDMixin, TimestampMixin, SoftDeleteMixin
+
+from database.base import Base, SoftDeleteMixin, TimestampMixin, UUIDMixin
+
 
 class User(Base, UUIDMixin, TimestampMixin, SoftDeleteMixin):
     __tablename__ = "users"

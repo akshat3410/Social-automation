@@ -1,40 +1,38 @@
-# Stage 1: Builder
-FROM python:3.13-slim as builder
+# Stage 1: Builder — install dependencies into a virtualenv
+FROM python:3.13-slim AS builder
 
-WORKDIR /app
-
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
-    libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
 COPY requirements.txt .
-RUN pip wheel --no-cache-dir --no-deps --wheel-dir /app/wheels -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Stage 2: Runtime
 FROM python:3.13-slim
 
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH="/opt/venv/bin:$PATH"
+
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpq5 \
-    && rm -rf /var/lib/apt/lists/*
-
-COPY --from=builder /app/wheels /wheels
-COPY --from=builder /app/requirements.txt .
-
-RUN pip install --no-cache /wheels/*
-
+COPY --from=builder /opt/venv /opt/venv
 COPY . .
 
-# Create non-root user
-RUN adduser --disabled-password --gecos '' social-user
-RUN chown -R social-user:social-user /app
+RUN adduser --disabled-password --gecos '' social-user \
+    && chown -R social-user:social-user /app
 USER social-user
 
 EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)" || exit 1
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

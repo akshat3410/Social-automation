@@ -1,28 +1,27 @@
-from pydantic import BaseModel, EmailStr, ConfigDict
+from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
+
 from .common import UUIDStr
+
 
 class UserBase(BaseModel):
     email: EmailStr
-    username: str
-    
-class UserCreate(UserBase):
-    password: str
+    username: str = Field(min_length=3, max_length=64)
 
-class UserUpdate(BaseModel):
-    email: EmailStr | None = None
-    username: str | None = None
-    password: str | None = None
+
+class UserCreate(UserBase):
+    password: str = Field(min_length=8, max_length=128)
+
 
 class UserResponse(UserBase):
     id: UUIDStr
     is_active: bool
     is_superuser: bool
-    
+    created_at: datetime
+
     model_config = ConfigDict(from_attributes=True)
 
-class UserLogin(BaseModel):
-    email: EmailStr
-    password: str
 
 class TokenResponse(BaseModel):
     access_token: str

@@ -1,11 +1,13 @@
+import enum
 import uuid
 from typing import Any
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import String, Integer, ForeignKey, Enum, Index
-from sqlalchemy.dialects.postgresql import JSONB
-from backend.database.base import Base, UUIDMixin, TimestampMixin
 
-import enum
+from sqlalchemy import Enum, ForeignKey, Integer, String
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import Mapped, mapped_column
+
+from database.base import Base, TimestampMixin, UUIDMixin
+
 
 class LogLevelEnum(str, enum.Enum):
     info = "info"

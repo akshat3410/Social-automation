@@ -1,18 +1,18 @@
-from backend.database.base import Base
-from backend.models.user import User
-from backend.models.social_account import SocialAccount
-from backend.models.content_idea import ContentIdea
-from backend.models.research_result import ResearchResult
-from backend.models.draft import Draft
-from backend.models.published_post import PublishedPost
-from backend.models.analytics import Analytics
-from backend.models.comment import Comment
-from backend.models.brand_memory import BrandMemory
-from backend.models.subreddit_profile import SubredditProfile
-from backend.models.posting_schedule import PostingSchedule
-from backend.models.prompt_version import PromptVersion
-from backend.models.quality_score import QualityScore
-from backend.models.system_log import SystemLog
+from database.base import Base
+from models.analytics import Analytics
+from models.brand_memory import BrandMemory
+from models.comment import Comment
+from models.content_idea import ContentIdea
+from models.draft import Draft
+from models.posting_schedule import PostingSchedule
+from models.prompt_version import PromptVersion
+from models.published_post import PublishedPost
+from models.quality_score import QualityScore
+from models.research_result import ResearchResult
+from models.social_account import SocialAccount
+from models.subreddit_profile import SubredditProfile
+from models.system_log import SystemLog
+from models.user import User
 
 __all__ = [
     "Base",
